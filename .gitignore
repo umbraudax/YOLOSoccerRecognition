@@ -2,3 +2,4 @@
 *.avi
 *.pt
 training
+.env

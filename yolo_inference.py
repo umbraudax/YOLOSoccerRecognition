@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 
-model = YOLO('./runs/detect/dummy_train/weights/best.pt')
+model = YOLO('./runs/detect/complete_model/weights/best.pt')
 
 
 # inference

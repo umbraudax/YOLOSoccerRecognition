@@ -5,6 +5,8 @@ import pickle
 import os
 import sys
 import cv2
+import numpy as np
+
 sys.path.append('../')
 from utils import get_center_of_bbox, get_width_of_bbox
 
@@ -18,7 +20,7 @@ class Tracker:
         batch_size = 20
         detections = []
         for i in range(0, len(frames), batch_size):
-            detections_batch = self.model.predict(frames[i:i+batch_size], conf=0.1)
+            detections_batch = self.model.predict(frames[i:i+batch_size], conf=0.1, device='mps')
             detections += detections_batch
         return detections
 
@@ -32,7 +34,6 @@ class Tracker:
 
 
         detections = self.detect_frames(frames)
-
         tracks = {
             "players": [],
             "referees": [],
@@ -67,8 +68,8 @@ class Tracker:
                 if cls_id == cls_names_inv['referee']:
                     tracks["referees"][frame_num][track_id] = {"bbox": bbox}
 
-            for frame_detection in detections:
-                bbox = frame_detection[0].boxes.xyxy.flatten().tolist()
+            for frame_detection in detection_supervision:
+                bbox = frame_detection[0].tolist()
                 cls_id = frame_detection[3]
 
                 if cls_id == cls_names_inv['ball']:
@@ -92,13 +93,67 @@ class Tracker:
             center=(x_center, y2),
             axes=(int(width), int(0.35*width)),
             angle=0.0,
-            startAngle=45,
+            startAngle=-45,
             endAngle=235,
             color=(cb,cg,cr),
             thickness=2,
             lineType=cv2.LINE_4
         )
+        rect_width = 40
+        rect_height = 20
+        x1_rect = x_center - rect_width // 2
+        y1_rect = y2 - rect_height // 2
+        x2_rect = x_center + rect_width // 2
+        y2_rect = y2 + rect_height // 2
+
+        if track_id is not None:
+            cv2.rectangle(frame,
+                          (x1_rect, y1_rect),
+                          (x2_rect, y2_rect),
+                          (cb,cg,cr),
+                          cv2.FILLED)
+
+            x1_text = x1_rect + 12
+            if track_id > 99:
+                x1_text -= 10
+            cv2.putText(
+                frame,
+                f"{track_id}",
+                (int(x1_text), int(y1_rect+15)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0,0,0),
+                2
+            )
+
         return frame
+
+    def draw_triangle(self, frame, bbox, color):
+        y = int(bbox[1])
+        x, _ = get_center_of_bbox(bbox)
+
+        triangle_points = np.array([
+            [x, y],
+            [x-10, y-20],
+            [x+10, y-20]
+        ], np.int32)
+
+        cr, cg, cb = color
+        cv2.drawContours(frame,
+                      [triangle_points],
+                      0,
+                      (cb, cg, cr),
+                      cv2.FILLED)
+        cv2.drawContours(frame,
+                        [triangle_points],
+                        0,
+                        (0,0,0),
+                        2)
+
+        return frame
+
+
+    
 
 
     def draw_annotations(self, video_frames, tracks):
@@ -107,10 +162,17 @@ class Tracker:
             frame = frame.copy()
 
             player_dict = tracks['players'][frame_num]
-            ball = tracks['ball'][frame_num]
+            ball_dict = tracks['ball'][frame_num]
             referee_dict = tracks['referees'][frame_num]
 
             for track_id, player in player_dict.items():
                 frame = self.draw_ellipse(frame, player['bbox'], (255, 0, 0), track_id)
+
+            for track_id, referee in referee_dict.items():
+                frame = self.draw_ellipse(frame, referee['bbox'], (0, 255, 0), track_id)
+
+            if ball_dict:
+                frame = self.draw_triangle(frame, ball_dict[0]['bbox'], (0, 0, 255))
+            
             output_video_frames.append(frame)
         return output_video_frames
