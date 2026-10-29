@@ -166,10 +166,10 @@ class Tracker:
             referee_dict = tracks['referees'][frame_num]
 
             for track_id, player in player_dict.items():
-                frame = self.draw_ellipse(frame, player['bbox'], (255, 0, 0), track_id)
+                frame = self.draw_ellipse(frame, player['bbox'], player['team_color'], track_id)
 
             for track_id, referee in referee_dict.items():
-                frame = self.draw_ellipse(frame, referee['bbox'], (0, 255, 0), track_id)
+                frame = self.draw_ellipse(frame, referee['bbox'], (0, 0, 0), track_id)
 
             if ball_dict:
                 frame = self.draw_triangle(frame, ball_dict[0]['bbox'], (0, 0, 255))
