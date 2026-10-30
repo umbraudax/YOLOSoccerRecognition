@@ -2,7 +2,11 @@ from utils import read_video, save_video
 from tracker_helpers import Tracker
 import cv2
 from team_assigner import TeamAssigner
+from player_assigner import PlayerAssigner
+import numpy as np
 
+
+VIDEO_NAME = "video1"
 
 def save_cropped_image(tracks, frame):
     # save cropped player image
@@ -19,30 +23,50 @@ def save_cropped_image(tracks, frame):
 
 
 def main():
-    video_frames = read_video('input/08fd33_4.mp4')
+    video_frames = read_video(f'input/{VIDEO_NAME}.mp4')
 
-    tracker = Tracker('./runs/detect/complete_model/weights/best.pt')
+    tracker = Tracker('./models/best.pt')
 
     tracks = tracker.get_object_tracks(video_frames,
-                                       read_from_stub=True,
-                                       stub_path='stubs/track_stubs.pkl')
+                                       read_from_stub=False,
+                                       stub_path=f'stubs/{VIDEO_NAME}.pkl')
     # save_cropped_image(tracks, video_frames[0])
 
+    # interpolate ball pos
+    tracks['ball'] = tracker.interpolate_ball_pos(tracks['ball'])
 
-    INIT_FRAME = 10
+    INIT_FRAME = 3
     team_assigner = TeamAssigner()
     team_assigner.assign_team_color(video_frames[INIT_FRAME],
                                     tracks['players'][INIT_FRAME])
 
+    player_assigner = PlayerAssigner()
+    
+    
+    team_ball_control = []
     for frame_num, player_track in enumerate(tracks['players']):
+        closest_player = player_assigner.assign_player(tracks['players'][frame_num], tracks['ball'][frame_num][0])
         for player_id, track in player_track.items():
+        
             team = team_assigner.get_player_team(video_frames[frame_num],
                                                  track['bbox'],
                                                  player_id)
-            tracks['players'][frame_num][player_id]['team'] = team
-            tracks['players'][frame_num][player_id]['team_color'] = team_assigner.team_colors[team]
+            track['team'] = team
+            track['team_color'] = team_assigner.team_colors[team]
+            track['has_ball'] = closest_player and closest_player != -1 and player_id == closest_player
+            if track['has_ball']:
+                team_ball_control.append(track['team'])
+        if not team_ball_control:
+             team_ball_control.append(1)
+        elif not closest_player or closest_player == -1:
+                team_ball_control.append(team_ball_control[-1])
+    team_ball_control = np.array(team_ball_control)
 
-    output_video_frames = tracker.draw_annotations(video_frames, tracks)
+        
+        
+            
+
+    output_video_frames = tracker.draw_annotations(video_frames, tracks, team_ball_control)
 
 
 

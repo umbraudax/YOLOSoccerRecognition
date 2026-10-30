@@ -5,3 +5,6 @@ def get_center_of_bbox(bbox):
 def get_width_of_bbox(bbox):
     x1, _, x2, _ = bbox
     return int(x2 - x1)
+
+def distance(x1, y1, x2, y2):
+    return ((x1 - x2)**2 + (y1 - y2)**2)**0.5

@@ -1,7 +1,7 @@
 task: detect
 mode: train
 model: yolo26n.pt
-data: ./training/football-players-detection-1/data.yaml
+data: ../training/football-players-detection-1/data.yaml
 epochs: 30
 time: null
 patience: 100
@@ -10,10 +10,10 @@ imgsz: 640
 save: true
 save_period: -1
 cache: false
-device: mps:0
+device: mps
 workers: 8
 project: null
-name: complete_model
+name: test
 exist_ok: false
 pretrained: true
 cls_remap: true
@@ -45,7 +45,7 @@ max_det: 300
 quantize: null
 dnn: false
 plots: true
-end2end: null
+nms: null
 source: null
 vid_stride: 1
 stream_buffer: false
@@ -65,13 +65,11 @@ show_conf: true
 show_boxes: true
 line_width: null
 format: torchscript
-keras: false
 optimize: false
 dynamic: false
 simplify: true
 opset: null
 workspace: null
-nms: false
 lr0: 0.01
 lrf: 0.01
 momentum: 0.937
@@ -113,4 +111,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: tracktrack.yaml
-save_dir: /Users/shawnkaraty/stevens/SportsRecognition/runs/detect/complete_model
+save_dir: /Users/shawnkaraty/stevens/SportsRecognition/devanalysis/runs/detect/test
