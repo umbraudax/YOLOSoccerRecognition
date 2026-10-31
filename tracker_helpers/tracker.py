@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.append('../')
-from utils import get_center_of_bbox, get_width_of_bbox
+from utils import get_center_of_bbox, get_width_of_bbox, get_foot_position
 
 class Tracker:
     def __init__(self, model_path):
@@ -224,5 +224,17 @@ class Tracker:
         ball_positions = [{0: {'bbox': x}} for x in df_ball_positions.to_numpy().tolist()]
 
         return ball_positions
+
+    def add_position_to_tracks(self, tracks):
+        for object, object_tracks in tracks.items():
+            for frame_num, track in enumerate(object_tracks):
+                for track_id, track_info in track.items():
+                    bbox = track_info['bbox']
+                    if object == 'ball':
+                        position = get_center_of_bbox(bbox)
+                    else:
+                        position = get_foot_position(bbox)
+                    track_info['position'] = position
+
 
             
